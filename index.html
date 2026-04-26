@@ -439,6 +439,57 @@
         font-weight: 700;
         text-decoration: none;
       }
+
+      /* IMAGE UPLOAD MODAL */
+      #imageUploadModal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(4px);
+      }
+      #imageUploadModal.open {
+        display: flex;
+      }
+      .modal-content {
+        background: var(--bg-card);
+        padding: 32px;
+        border-radius: 16px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        max-width: 500px;
+        width: 90%;
+      }
+      .modal-content h3 {
+        margin-bottom: 16px;
+        color: var(--text-primary);
+      }
+      .upload-input {
+        display: none;
+      }
+      .upload-btn {
+        width: 100%;
+        padding: 12px;
+        border: 2px dashed var(--border-color);
+        border-radius: 10px;
+        background: var(--bg-alt);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-align: center;
+        color: var(--text-secondary);
+        font-weight: 500;
+        margin-bottom: 16px;
+      }
+      .upload-btn:hover {
+        border-color: #2563eb;
+        background: var(--skill-hover-bg);
+        color: var(--skill-hover-text);
+      }
     </style>
   </head>
   <body>
@@ -510,6 +561,27 @@
       <a href="#projects" onclick="closeMobileMenu()">Projects</a>
       <a href="#skills" onclick="closeMobileMenu()">Skills</a>
       <a href="#contact" onclick="closeMobileMenu()">Contact</a>
+    </div>
+
+    <!-- IMAGE UPLOAD MODAL -->
+    <div id="imageUploadModal">
+      <div class="modal-content">
+        <h3 class="font-display font-bold text-xl mb-4">Upload Your Photo</h3>
+        <label class="upload-btn" for="profileImageInput">
+          <i class="ri-upload-cloud-2-line text-2xl mb-2" style="display: block;"></i>
+          Click to upload or drag and drop
+        </label>
+        <input type="file" id="profileImageInput" class="upload-input" accept="image/*" />
+        <div id="imagePreview" style="margin-bottom: 16px;"></div>
+        <div class="flex gap-2">
+          <button id="uploadConfirm" class="flex-1 bg-navy text-white px-4 py-2 rounded-lg hover:bg-accent transition-colors font-medium">
+            Confirm
+          </button>
+          <button id="cancelUpload" class="flex-1 border border-slate-200 text-slate-700 dark:text-slate-300 px-4 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors font-medium">
+            Cancel
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- ══════════════════════════════ HERO ══════════════════════════════ -->
@@ -596,17 +668,19 @@
               ></div>
               <!-- Profile image -->
               <div
-                class="relative z-10 rounded-3xl overflow-hidden shadow-2xl border-4 border-white"
+                class="relative z-10 rounded-3xl overflow-hidden shadow-2xl border-4 border-white cursor-pointer hover:shadow-xl transition-shadow"
                 style="
                   width: 280px;
                   height: 320px;
                   animation: floatImg 4s ease-in-out infinite;
                   will-change: transform;
                 "
+                onclick="openImageUploadModal()"
               >
                 <img
                   src="./assets/bhushan-dhake.jpg"
                   alt="Bhushan Dhake"
+                  id="profileImage"
                   class="w-full h-full object-cover object-top"
                   onerror="
                     this.style.display = 'none';
@@ -615,6 +689,7 @@
                 />
                 <!-- Fallback placeholder -->
                 <div
+                  id="placeholderContent"
                   style="
                     display: none;
                     width: 100%;
@@ -997,10 +1072,6 @@
                     class="text-xs px-2 py-1 rounded-md bg-slate-100 text-slate-600"
                     >ESP32</span
                   >
-                  <span
-                    class="text-xs px-2 py-1 rounded-md bg-slate-100 text-slate-600"
-                    >IoT</span
-                  >
                 </div>
               </div>
             </div>
@@ -1009,81 +1080,156 @@
       </div>
     </section>
 
+    <!-- SCRIPTS -->
     <script>
-      // Theme toggle
+      // Theme Toggle
       const themeToggle = document.getElementById('theme-toggle');
-      const htmlElement = document.documentElement;
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
-      
-      // Initialize theme
-      if (localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && prefersDark.matches)) {
-        htmlElement.classList.add('dark');
+      const themeIcon = document.getElementById('theme-icon');
+      const html = document.documentElement;
+
+      // Check for saved theme preference or default to light mode
+      const currentTheme = localStorage.getItem('theme') || 'light';
+      if (currentTheme === 'dark') {
+        html.classList.add('dark');
+        themeIcon.classList.remove('ri-sun-line');
+        themeIcon.classList.add('ri-moon-line');
       }
 
-      themeToggle?.addEventListener('click', () => {
-        htmlElement.classList.toggle('dark');
-        localStorage.setItem('theme', htmlElement.classList.contains('dark') ? 'dark' : 'light');
-        updateThemeIcon();
+      themeToggle.addEventListener('click', () => {
+        html.classList.toggle('dark');
+        const isDark = html.classList.contains('dark');
+        localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        themeIcon.classList.toggle('ri-sun-line');
+        themeIcon.classList.toggle('ri-moon-line');
       });
 
-      function updateThemeIcon() {
-        const icon = document.getElementById('theme-icon');
-        if (htmlElement.classList.contains('dark')) {
-          icon.className = 'ri-moon-line';
-        } else {
-          icon.className = 'ri-sun-line';
-        }
-      }
-
-      updateThemeIcon();
-
-      // Mobile menu
+      // Mobile Menu
       const menuBtn = document.getElementById('menu-btn');
       const mobileMenu = document.getElementById('mobile-menu');
-      const closeMenuBtn = document.getElementById('close-menu');
+      const closeMenu = document.getElementById('close-menu');
 
-      menuBtn?.addEventListener('click', () => {
+      menuBtn.addEventListener('click', () => {
         mobileMenu.classList.add('open');
       });
 
-      closeMenuBtn?.addEventListener('click', () => {
-        closeMobileMenu();
+      closeMenu.addEventListener('click', () => {
+        mobileMenu.classList.remove('open');
       });
 
       function closeMobileMenu() {
         mobileMenu.classList.remove('open');
       }
 
-      // Back to top button
-      const backTopBtn = document.getElementById('back-top');
-      window.addEventListener('scroll', () => {
-        if (window.scrollY > 300) {
-          backTopBtn?.classList.add('show');
-        } else {
-          backTopBtn?.classList.remove('show');
+      // Image Upload Modal
+      const imageUploadModal = document.getElementById('imageUploadModal');
+      const profileImageInput = document.getElementById('profileImageInput');
+      const uploadConfirm = document.getElementById('uploadConfirm');
+      const cancelUpload = document.getElementById('cancelUpload');
+      const imagePreview = document.getElementById('imagePreview');
+      let selectedFile = null;
+
+      function openImageUploadModal() {
+        imageUploadModal.classList.add('open');
+      }
+
+      function closeImageUploadModal() {
+        imageUploadModal.classList.remove('open');
+        selectedFile = null;
+        imagePreview.innerHTML = '';
+        profileImageInput.value = '';
+      }
+
+      profileImageInput.addEventListener('change', (e) => {
+        selectedFile = e.target.files[0];
+        if (selectedFile) {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            imagePreview.innerHTML = `
+              <img src="${event.target.result}" alt="Preview" style="max-width: 100%; max-height: 300px; border-radius: 8px;" />
+            `;
+          };
+          reader.readAsDataURL(selectedFile);
         }
       });
 
-      // Reveal animations on scroll
+      uploadConfirm.addEventListener('click', () => {
+        if (selectedFile) {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            const profileImage = document.getElementById('profileImage');
+            const placeholderContent = document.getElementById('placeholderContent');
+            profileImage.src = event.target.result;
+            profileImage.style.display = 'block';
+            placeholderContent.style.display = 'none';
+            closeImageUploadModal();
+          };
+          reader.readAsDataURL(selectedFile);
+        }
+      });
+
+      cancelUpload.addEventListener('click', closeImageUploadModal);
+
+      imageUploadModal.addEventListener('click', (e) => {
+        if (e.target === imageUploadModal) {
+          closeImageUploadModal();
+        }
+      });
+
+      // Drag and drop functionality
+      const uploadBtn = document.querySelector('.upload-btn');
+      uploadBtn.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadBtn.style.borderColor = '#2563eb';
+      });
+
+      uploadBtn.addEventListener('dragleave', () => {
+        uploadBtn.style.borderColor = 'var(--border-color)';
+      });
+
+      uploadBtn.addEventListener('drop', (e) => {
+        e.preventDefault();
+        if (e.dataTransfer.files.length) {
+          profileImageInput.files = e.dataTransfer.files;
+          const event = new Event('change', { bubbles: true });
+          profileImageInput.dispatchEvent(event);
+        }
+      });
+
+      // Section Reveal Animation
       const revealElements = document.querySelectorAll('.reveal');
-      const observer = new IntersectionObserver((entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('visible');
+
+      const reveal = () => {
+        revealElements.forEach((element) => {
+          const windowHeight = window.innerHeight;
+          const elementTop = element.getBoundingClientRect().top;
+          if (elementTop < windowHeight - 100) {
+            element.classList.add('visible');
           }
         });
-      }, { threshold: 0.1 });
+      };
 
-      revealElements.forEach((el) => observer.observe(el));
+      window.addEventListener('scroll', reveal);
+      reveal(); // Initial check
 
-      // Add back to top button if it doesn't exist
-      if (!backTopBtn) {
-        const button = document.createElement('a');
-        button.id = 'back-top';
-        button.href = '#home';
-        button.innerHTML = '<i class="ri-arrow-up-line"></i>';
-        document.body.appendChild(button);
+      // Back to Top Button
+      const backTop = document.getElementById('back-top') || createBackToTopButton();
+
+      function createBackToTopButton() {
+        const btn = document.createElement('a');
+        btn.id = 'back-top';
+        btn.href = '#home';
+        btn.innerHTML = '<i class="ri-arrow-up-line"></i>';
+        document.body.appendChild(btn);
+        return btn;
       }
+
+      window.addEventListener('scroll', () => {
+        if (window.pageYOffset > 300) {
+          backTop.classList.add('show');
+        } else {
+          backTop.classList.remove('show');
+        }
+      });
     </script>
   </body>
 </html>
